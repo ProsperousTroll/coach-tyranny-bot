@@ -11,7 +11,7 @@ dpp = dependency('dpp')
 
 executable(
   'coach-tyranny-3',
-  ['src/main.cpp'], # source files go here
+  ['src/main.cpp', 'src/coach.cpp'], # source files go here
   include_directories: inc,
   install: true, dependencies: [dpp] # dependencies go here
 )
