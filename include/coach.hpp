@@ -8,6 +8,7 @@
 #include <dpp/once.h>
 #include <cstdlib>
 #include <fstream>
+#include <random>
 #include <iostream>
 
 namespace Coach {

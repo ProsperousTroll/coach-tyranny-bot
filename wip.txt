@@ -1,0 +1,6 @@
+coach.on_message_create([&coach](dpp::message_create_t const& event){
+   if(event.msg.content.find("im sorry") != std::string::npos){
+      event.reply("Don't be sorry, boy. Just do some neck calisthenics and we'll call it")
+   }
+});
+
