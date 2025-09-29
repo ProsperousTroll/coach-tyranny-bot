@@ -9,19 +9,23 @@
 #include <fstream>
 #include <random>
 #include <iostream>
+#include <ctime>
 
 namespace Coach {
+   void log(std::string const& input);
+
    class bot {
    // all functions of the bot in a singleton class, for scalability and organization.
       public:
+         // singleton boiler
+         static bot* getInstance();//{if(instance == nullptr){instance = new bot();} return instance;}
+                                   //
          // ------ members ------- //
          dpp::cluster coach{token(), dpp::i_all_intents};
          dpp::commandhandler cmdHandler{&coach};
 
          // ------ methods ------- //
-         // singleton boiler
-         bot(){getInstance();}
-         ~bot(){delete instance;}
+
 
          // helpers
          //bool checkToken(std::string& TOKEN);
@@ -43,7 +47,8 @@ namespace Coach {
          void run();
 
       private:
-         bot* instance;
-         bot* getInstance(){if(!instance){instance = new bot();} return instance;}
+         static bot* instance;
+         bot(){}
+         ~bot(){delete instance;}
    };
 }

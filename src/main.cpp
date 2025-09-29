@@ -1,8 +1,8 @@
 #include "include/coach.hpp"
 
 int main(){
-   Coach::bot instance{};
-   instance.run();
+   Coach::bot* inst{Coach::bot::getInstance()};
+   inst->run();
    //
    return 0;
 }

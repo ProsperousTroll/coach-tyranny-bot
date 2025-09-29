@@ -1,9 +1,26 @@
 #include "coach.hpp"
+#include <ctime>
 #include <dpp/commandhandler.h>
 #include <dpp/dispatcher.h>
 #include <string>
 
-// ------- helpers for commands ------- //
+// ----------- boiler ----------- //
+Coach::bot* Coach::bot::instance{nullptr};
+
+Coach::bot* Coach::bot::getInstance(){
+   if(instance == nullptr){
+      instance = new Coach::bot();
+   } return instance;
+}
+
+// ------- helpers ------- //
+
+void Coach::log(std::string const& input){
+   std::time_t now{std::time(nullptr)};
+   char timeFormat[100];
+   std::strftime(timeFormat, sizeof(timeFormat), "%Y-%m-%d %X:%M:%S", std::localtime(&now));
+   std::cout << "[" << timeFormat << "] " << input << '\n';
+}
 
 std::string Coach::bot::guard(){
    // too lazy to use weights sorry
@@ -12,8 +29,10 @@ std::string Coach::bot::guard(){
    int chance{hundred(rng)};
    std::cout << chance << '\n';
    if(chance >= 99){
+      Coach::log("Coach is guarding the bank! ...naked.");
       return "https://images-ext-1.discordapp.net/external/oAx1rkBsCpJNNldTVSx5J_tKdzmqnVtlPihCpl2Zd0s/https/cdn.imgchest.com/files/739cx8qqon7.png?format=webp&quality=lossless&width=1416&height=796";
    }
+   Coach::log("Coach is guarding the bank!");
    return "https://images-ext-1.discordapp.net/external/HE_-a1xuAxUQXGueecDOzQsG14N3EL5QD3te4FmkH00/https/cdn.imgchest.com/files/4jdcvmaarx4.png?format=webp&quality=lossless&width=1416&height=796";
 }
 
@@ -23,10 +42,10 @@ std::string Coach::bot::flip(){
    int chance{fiftyFifty(rng)};
    std::cout << chance << '\n';
    if(chance){
-      //log("Coach was flipped! user was... pitiful.");
+      Coach::log("Coach was flipped! user was... pitiful.");
       return "Boy, that's pitiful. Just pitiful.";
    }
-   //log("Coach was flipped! user was... tough enough!");
+   Coach::log("Coach was flipped! user was... tough enough!");
    return "Oh, you know that it's tough. Enough!";
 }
 
@@ -36,10 +55,11 @@ std::string Coach::bot::token(){
    std::ifstream dotenv("../.env");
    std::string out;
    if(!(dotenv >> out)){
-      log("Error! No token file found...");
+      Coach::log("Error! No token file found...");
    } else if (out == "") {
-      log("Error! Invalid token...");
+      Coach::log("Error! Invalid token...");
    }
+   Coach::log("Loaded dotenv... initializing...");
    return out;
 }
 
@@ -52,6 +72,7 @@ void Coach::bot::simpleReply(std::string const& name, std::string const& descrip
 
       [this, reply](std::string const& command, dpp::parameter_list_t const& parameters, dpp::command_source src){
          cmdHandler.reply(dpp::message(reply()), src);
+         Coach::log("command " + command + " was ran!");
       }
    );
 }
@@ -64,7 +85,7 @@ void Coach::bot::onMessageCreate(){
       if((event.msg.content.find("im sorry") != std::string::npos || event.msg.content.find("i'm sorry") != std::string::npos)){
         event.reply("Don't be sorry, boy. Just do some neck calisthenics and we'll call it even.");
         std::string user{event.msg.author.username};
-        log(user + " just apologized... Big mistake!");
+        Coach::log(user + " just apologized... Big mistake!");
       }
 
       if(event.msg.content.find("neck") != std::string::npos){
