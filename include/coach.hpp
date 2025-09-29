@@ -37,6 +37,7 @@ namespace Coach {
          void simpleReply(std::string const& name, std::string const& description, std::string (*reply)());
          static std::string flip();
          static std::string guard();
+         static void mp3Player();
          static void calisthenics();
          std::string (*flipP)(){flip};
          std::string (*guardP)(){guard}; // todo: think of something smarter

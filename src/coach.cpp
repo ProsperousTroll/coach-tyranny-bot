@@ -2,8 +2,8 @@
 #include <ctime>
 #include <dpp/commandhandler.h>
 #include <dpp/dispatcher.h>
-#include <mpg123.h>
 #include <string>
+#include <vector>
 
 // ----------- boiler ----------- //
 //
@@ -54,21 +54,12 @@ std::string Coach::bot::flip(){
    return "Oh, you know that it's tough. Enough!";
 }
 
+void Coach::bot::mp3Player(){
+   // TODO: Implement MP3 player to decode to raw PCM
+}
+
 void Coach::bot::calisthenics(){
-   // MAKE SURE the mpg123 handler sample rate is set to 48000
-   int err{0};
-   unsigned char* buffer;
-   size_t buffer_size, done;
-   int channels, encoding;
-   long rate;
-
-   mpg123_handle* mh(mpg123_new(NULL, &err));
-   mpg123_param(mh, MPG123_FORCE_RATE, 48000, 48000.0);
-
-   buffer_size = mpg123_outblock(mh);
-   buffer = new unsigned char[buffer_size];
-
-   mpg123_open(mh, "../audio");
+   // TODO: implement calisthenics command   
 }
 
 // --------- coach helpers ---------- //
