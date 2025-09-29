@@ -1,5 +1,6 @@
 #pragma once
 #include "dpp/dpp.h"
+#include "mpg123.h"
 #include <dpp/appcommand.h>
 #include <dpp/cluster.h>
 #include <dpp/commandhandler.h>
@@ -36,6 +37,7 @@ namespace Coach {
          void simpleReply(std::string const& name, std::string const& description, std::string (*reply)());
          static std::string flip();
          static std::string guard();
+         static void calisthenics();
          std::string (*flipP)(){flip};
          std::string (*guardP)(){guard}; // todo: think of something smarter
 

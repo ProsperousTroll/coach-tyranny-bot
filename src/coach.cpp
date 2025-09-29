@@ -2,9 +2,12 @@
 #include <ctime>
 #include <dpp/commandhandler.h>
 #include <dpp/dispatcher.h>
+#include <mpg123.h>
 #include <string>
 
 // ----------- boiler ----------- //
+//
+// I made the decision to make coach a singleton class, as this would make scaling easier with more complex commands and event handling.
 Coach::bot* Coach::bot::instance{nullptr};
 
 Coach::bot* Coach::bot::getInstance(){
@@ -15,6 +18,7 @@ Coach::bot* Coach::bot::getInstance(){
 
 // ------- helpers ------- //
 
+// TODO: Make a better logging system, or maybe find a good logging library.
 void Coach::log(std::string const& input){
    std::time_t now{std::time(nullptr)};
    char timeFormat[100];
@@ -22,6 +26,7 @@ void Coach::log(std::string const& input){
    std::cout << "[" << timeFormat << "] " << input << '\n';
 }
 
+// TODO: More robust randomization with weights.
 std::string Coach::bot::guard(){
    // too lazy to use weights sorry
    std::mt19937 rng(std::random_device{}());
@@ -47,6 +52,23 @@ std::string Coach::bot::flip(){
    }
    Coach::log("Coach was flipped! user was... tough enough!");
    return "Oh, you know that it's tough. Enough!";
+}
+
+void Coach::bot::calisthenics(){
+   // MAKE SURE the mpg123 handler sample rate is set to 48000
+   int err{0};
+   unsigned char* buffer;
+   size_t buffer_size, done;
+   int channels, encoding;
+   long rate;
+
+   mpg123_handle* mh(mpg123_new(NULL, &err));
+   mpg123_param(mh, MPG123_FORCE_RATE, 48000, 48000.0);
+
+   buffer_size = mpg123_outblock(mh);
+   buffer = new unsigned char[buffer_size];
+
+   mpg123_open(mh, "../audio");
 }
 
 // --------- coach helpers ---------- //
@@ -91,6 +113,8 @@ void Coach::bot::onMessageCreate(){
       if(event.msg.content.find("neck") != std::string::npos){
          dpp::snowflake user{event.msg.author.id};
          coach.direct_message_create(user, dpp::message("Hey. Can we talk?"));
+         coach.direct_message_create(user, dpp::message("I noticed you were talking about your neck just now. And I was wonderin' if maybe you'd show me? Maybe do a calisthenic for your ol' coach? Please?"));
+         coach.direct_message_create(user, dpp::message("Hello?"));
       }     
    });
 }
