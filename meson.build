@@ -8,7 +8,7 @@ inc = include_directories('include')
 # you can add dependencies by installing them with 'meson wrap install (package name)'
 # then listing them as variables, like 'ex_dep = dependency(example)'
 dpp = dependency('dpp')
-mpg123 = dependency('mpg123')
+mpg123 = dependency('libmpg123')
 
 executable(
   'coach-tyranny-3',

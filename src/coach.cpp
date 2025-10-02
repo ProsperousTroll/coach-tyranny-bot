@@ -1,9 +1,23 @@
 #include "coach.hpp"
+#include <chrono>
+#include <cstdint>
 #include <ctime>
+#include "mpg123.h"
+#include <dpp/cache.h>
+#include <dpp/cluster.h>
 #include <dpp/commandhandler.h>
+#include <dpp/coro/async.h>
+#include <dpp/discordclient.h>
 #include <dpp/dispatcher.h>
+#include <dpp/message.h>
+#include <dpp/presence.h>
+#include <dpp/timer.h>
+#include <random>
 #include <string>
+#include <thread>
 #include <vector>
+
+
 
 // ----------- boiler ----------- //
 //
@@ -26,27 +40,65 @@ void Coach::log(std::string const& input){
    std::cout << "[" << timeFormat << "] " << input << '\n';
 }
 
+int Coach::randInt(int min, int max){
+   std::mt19937 rng(std::random_device{}());
+   std::uniform_int_distribution<int> range(min, max);
+   return range(rng);
+}
+
+std::vector<uint8_t> Coach::getSound(std::string file){
+	std::vector<uint8_t> pcmdata;
+
+	mpg123_init();
+
+	int err;
+	mpg123_handle *mh = mpg123_new(NULL, &err);
+	unsigned char* buffer;
+	size_t buffer_size;
+	size_t done;
+	int channels, encoding;
+	long rate;
+
+	mpg123_param(mh, MPG123_FORCE_RATE, 48000, 48000.0);
+
+	buffer_size = mpg123_outblock(mh);
+	buffer = new unsigned char[buffer_size];
+
+	mpg123_open(mh, file.c_str());
+	mpg123_getformat(mh, &rate, &channels, &encoding);
+
+	unsigned int counter = 0;
+	for (int totalBtyes = 0; mpg123_read(mh, buffer, buffer_size, &done) == MPG123_OK; ) {
+		for (auto i = 0; i < buffer_size; i++) {
+			pcmdata.push_back(buffer[i]);
+		}
+		counter += buffer_size;
+		totalBtyes += done;
+	}
+	delete buffer;
+	mpg123_close(mh);
+	mpg123_delete(mh);
+	mpg123_exit();
+	return pcmdata;
+}
+
+// ---------------- commands / command logic ----------------- //
+
 // TODO: More robust randomization with weights.
 std::string Coach::bot::guard(){
    // too lazy to use weights sorry
-   std::mt19937 rng(std::random_device{}());
-   std::uniform_int_distribution<int> hundred(1, 100);
-   int chance{hundred(rng)};
-   std::cout << chance << '\n';
+   int chance{Coach::randInt(1, 100)};
    if(chance >= 99){
       Coach::log("Coach is guarding the bank! ...naked.");
-      return "https://images-ext-1.discordapp.net/external/oAx1rkBsCpJNNldTVSx5J_tKdzmqnVtlPihCpl2Zd0s/https/cdn.imgchest.com/files/739cx8qqon7.png?format=webp&quality=lossless&width=1416&height=796";
+      return "https://cdn.imgchest.com/files/739cx8qqon7.png";
    }
    Coach::log("Coach is guarding the bank!");
-   return "https://images-ext-1.discordapp.net/external/HE_-a1xuAxUQXGueecDOzQsG14N3EL5QD3te4FmkH00/https/cdn.imgchest.com/files/4jdcvmaarx4.png?format=webp&quality=lossless&width=1416&height=796";
+   return "https://cdn.imgchest.com/files/4jdcvmaarx4.png";
 }
 
 std::string Coach::bot::flip(){
-   std::mt19937 rng(std::random_device{}());
-   std::uniform_int_distribution<int> fiftyFifty(0, 1);
-   int chance{fiftyFifty(rng)};
-   std::cout << chance << '\n';
-   if(chance){
+   int chance{Coach::randInt(0, 2)};
+   if(chance == 1){
       Coach::log("Coach was flipped! user was... pitiful.");
       return "Boy, that's pitiful. Just pitiful.";
    }
@@ -54,12 +106,72 @@ std::string Coach::bot::flip(){
    return "Oh, you know that it's tough. Enough!";
 }
 
-void Coach::bot::mp3Player(){
-   // TODO: Implement MP3 player to decode to raw PCM
+std::string Coach::bot::question(){
+
+   int chance{randInt(0, 100)};
+   std::vector<std::string> rareAnswers{
+      "You should probably kill yourself.",
+      "You there, placeholder, why aren't you doing your neck calisthenics?",
+   };
+
+   std::vector<std::string> answers{
+      "I don't know about that, son.",
+      "Pitiful. That's just pitiful.",
+      "You sound like you're from Northern Soutwest Easter High. Stop talking.",
+      "Sounds like you ain't tough. Enough.",
+      "I oughta snap your thin lil' chicken neck for that.",
+      "Not by the hair on my big, bulgin' chest.",
+      "that's YOUR fault.",
+      "Some are wise. You, are otherwise.",
+      "I feel so bad for you right now, you can call me fluffy. I wouldn't even care.",
+      "You know what son, that's so elite, it's e-lite!",
+      "That's what I'm talkin about!",
+      "That is frivolosly unneccessary.",
+      "It's tough bein' tough.",
+      "I'd rather tend to the grass on my football field.",
+      "You know how I got this big, son? Neck calisthenics.",
+      "Relax.",
+      "You wanna be the best? Then don't mess. With the chest.",
+      "Nice. Very nice.",
+      "Who even says nook and cranny anymore? I don't even know what a cranny is.",
+      "That's enough to bring a tear to your eye...",
+      "You gotta have calves the size of cantalopes... or honeydew...",
+      "You gotta have a chest so big, no on ecan get within 5 feet of ya!",
+      "You need to have a personal relationship with Jesus Christ.",
+      "You kids sure do know your bible stories.",
+      "...Super.",
+   };
+   if(chance > 99){
+      return rareAnswers[randInt(0, rareAnswers.size())];
+   }
+   return answers[randInt(0, answers.size())];
 }
 
-void Coach::bot::calisthenics(){
+void Coach::bot::calisthenics(dpp::cluster& coach, dpp::snowflake guildId, std::string(*files)()){
    // TODO: implement calisthenics command   
+   dpp::voiceconn* v{coach.get_shard(0)->get_voice(guildId)};
+   if(!v || !v->voiceclient || !v->voiceclient->is_ready()){
+      Coach::log("Not connected to voice in server");
+      return;
+   }
+
+   std::ifstream pcmFile(files(), std::ios::binary);
+   if (!pcmFile.is_open()){
+      Coach::log("PCM file failed to open");
+      return;
+   }
+
+   constexpr size_t samples_per_frame = 1920; // stereo 20ms frame
+   constexpr size_t bytes_per_frame = samples_per_frame * sizeof(uint16_t); // 3840
+   
+   std::vector<uint16_t> buffer(samples_per_frame);
+   
+   while (pcmFile.read(reinterpret_cast<char*>(buffer.data()), bytes_per_frame)) {
+       // len here is the number of samples, not bytes
+       v->voiceclient->send_audio_raw(buffer.data(), samples_per_frame);
+   
+       std::this_thread::sleep_for(std::chrono::milliseconds(20));
+   }
 }
 
 // --------- coach helpers ---------- //
@@ -110,12 +222,50 @@ void Coach::bot::onMessageCreate(){
    });
 }
 
+std::string testFiles(){
+   return "../audio/OUTRO/DONTMESSWTC.pcm";
+}
+
 void Coach::bot::onReady(){
+   coach.set_presence(dpp::presence(dpp::ps_online, dpp::at_watching, "the big game"));
+
    cmdHandler.add_prefix("coach! ");
+   cmdHandler.add_prefix("Coach! ");
    coach.on_ready([this](dpp::ready_t const& event){
       // commands go here
+      // TODO: Add help command
       simpleReply("guard", "Guard the bank!", guardP);
       simpleReply("flip", "Is it tough, enough? Or just pitiful? Just ask your ol' coach.", flipP);
+      simpleReply("question", "Got a question for the coach? Go ahead and ask.", questionP);
+      // TODO: make this work. and look nice.
+      cmdHandler.add_command(
+         "calisthenics",
+         //parameters
+         {},
+                                                                                                                      
+         [this, event](std::string const& command, dpp::parameter_list_t const& parameters, dpp::command_source src){
+            cmdHandler.reply(dpp::message("Don't worry, I'll be home soon to run you chicken-necks through some calisthenics any day now!"), src);
+
+            //dpp::voiceconn* v{event.from()->get_voice(src.guild_id)};
+            /*
+            dpp::voiceconn* v{this->coach.get_shard(0)->get_voice(src.guild_id)};
+            if(v && v->voiceclient && v->voiceclient->is_ready()){
+               cmdHandler.reply(dpp::message("Get ready, 'cuz it ain't gon' be easy!"), src);
+               return;
+            }
+
+            calisthenics(this->coach, src.guild_id, testFiles);
+            
+            dpp::guild* g{dpp::find_guild(src.guild_id)};
+            if(!g->connect_member_voice(src.issuer.id)){
+               cmdHandler.reply(dpp::message("You ain't in a voice call!"), src);
+               return;
+            }           
+
+            Coach::log("Ready for calisthenics!");
+            */
+         }
+      );
    });
 }
 
