@@ -47,10 +47,10 @@ namespace Coach {
          void simpleReply(std::string const& name, std::string const& description, std::string (*reply)());
          static std::string flip();
          static std::string guard();
-         static std::string question(std::string userId);
+         static std::string question();
          static std::string calmDown(std::string user);
          static void calisthenics(dpp::cluster& coach, dpp::snowflake guildId, std::string(*files)());
-         std::string (*questionP)(std::string){question};
+         std::string (*questionP)(){question};
          std::string (*flipP)(){flip};
          std::string (*guardP)(){guard}; // todo: think of something smarter
 

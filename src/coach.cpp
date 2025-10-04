@@ -106,12 +106,11 @@ std::string Coach::bot::flip(){
    return "Oh, you know that it's tough. Enough!";
 }
 
-std::string Coach::bot::question(std::string userId){
-
+std::string Coach::bot::question(){
    int chance{randInt(0, 100)};
+   // TODO: Add a rare answer that pings a random user
    std::vector<std::string> rareAnswers{
-      //"You should probably kill yourself.",
-      "You there, @" + userId + " , why aren't you doing your neck calisthenics?",
+      "You should probably kill yourself.",
    };
 
    std::vector<std::string> answers{
@@ -142,7 +141,7 @@ std::string Coach::bot::question(std::string userId){
       "...Super.",
    };
    if(chance < 99){
-      return rareAnswers[randInt(0, rareAnswers.size())];
+      return rareAnswers[0]; // there's only one right now
    }
    return answers[randInt(0, answers.size())];
 }
@@ -252,13 +251,9 @@ void Coach::bot::onReady(){
       // commands go here
       // TODO: Add help command
       simpleReply("guard", "Guard the bank!", guardP);
-      //simpleReply("flip", "Is it tough, enough? Or just pitiful? Just ask your ol' coach.", flipP); simpleReply("question", "Got a question for the coach? Go ahead and ask.", questionP());
-      cmdHandler.add_command(
-            "question",
-            {},
-            [this, event](std::string const& command, dpp::parameter_list_t const& parameters, dpp::command_source src){
-               cmdHandler.reply(dpp::message(questionP(src.issuer.username)), src);
-            });
+      simpleReply("flip", "Is it tough, enough? Or just pitiful? Just ask your ol' coach.", flipP); 
+      simpleReply("question", "Got a question for the coach? Go ahead and ask.", questionP());
+
       // TODO: make this work. and look nice.
       cmdHandler.add_command(
          "calisthenics",
