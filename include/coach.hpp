@@ -22,8 +22,16 @@ namespace Coach {
    // all functions of the bot in a singleton class, for scalability and organization.
       public:
          // singleton boiler
-         static bot* getInstance();//{if(instance == nullptr){instance = new bot();} return instance;}
-                                   //
+         static bot* getInstance();
+         // ------ entry ----- //
+         void run();
+
+      private:
+         // ------------ boiler ---------- //
+         static bot* instance;
+         bot(){}
+         ~bot(){delete instance;}
+
          // ------ members ------- //
          dpp::cluster coach{token(), dpp::i_all_intents};
          dpp::commandhandler cmdHandler{&coach};
@@ -40,6 +48,7 @@ namespace Coach {
          static std::string flip();
          static std::string guard();
          static std::string question();
+         static std::string calmDown(std::string user);
          static void calisthenics(dpp::cluster& coach, dpp::snowflake guildId, std::string(*files)());
          std::string (*questionP)(){question};
          std::string (*flipP)(){flip};
@@ -48,13 +57,5 @@ namespace Coach {
          // events & handling
          void onReady();
          void onMessageCreate(); // what?
-
-         // ------ entry ----- //
-         void run();
-
-      private:
-         static bot* instance;
-         bot(){}
-         ~bot(){delete instance;}
    };
 }

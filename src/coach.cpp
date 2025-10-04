@@ -174,6 +174,18 @@ void Coach::bot::calisthenics(dpp::cluster& coach, dpp::snowflake guildId, std::
    }
 }
 
+std::string Coach::bot::calmDown(std::string user){
+   std::string reply[4]{
+      "Shut up " + user + ", I'll kill you!",
+      "Shut up " + user + ", I'm gonna kill you!",
+      "Not this time, " + user + "...",
+      "Too late " + user + ", I'm killing you slow!"
+   };
+
+   return reply[randInt(0, 3)];
+}
+
+
 // --------- coach helpers ---------- //
 
 std::string Coach::bot::token(){
@@ -219,6 +231,11 @@ void Coach::bot::onMessageCreate(){
          coach.direct_message_create(user, dpp::message("I noticed you were talking about your neck just now. And I was wonderin' if maybe you'd show me? Maybe do a calisthenic for your ol' coach? Please?"));
          coach.direct_message_create(user, dpp::message("Hello?"));
       }     
+
+      if(event.msg.content.find("calm down coach") != std::string::npos){
+         std::string user{event.msg.author.global_name};
+         event.reply(calmDown(user));
+      }
    });
 }
 
