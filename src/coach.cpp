@@ -140,7 +140,7 @@ std::string Coach::bot::question(){
       "You kids sure do know your bible stories.",
       "...Super.",
    };
-   if(chance < 99){
+   if(chance > 99){
       return rareAnswers[0]; // there's only one right now
    }
    return answers[randInt(0, answers.size())];
@@ -252,7 +252,7 @@ void Coach::bot::onReady(){
       // TODO: Add help command
       simpleReply("guard", "Guard the bank!", guardP);
       simpleReply("flip", "Is it tough, enough? Or just pitiful? Just ask your ol' coach.", flipP); 
-      simpleReply("question", "Got a question for the coach? Go ahead and ask.", questionP());
+      simpleReply("question", "Got a question for the coach? Go ahead and ask.", questionP);
 
       // TODO: make this work. and look nice.
       cmdHandler.add_command(
