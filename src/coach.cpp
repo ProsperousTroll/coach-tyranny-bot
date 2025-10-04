@@ -257,7 +257,7 @@ void Coach::bot::onReady(){
             "question",
             {},
             [this, event](std::string const& command, dpp::parameter_list_t const& parameters, dpp::command_source src){
-               cmdHandler.reply(dpp::message(questionP(src.issuer.id.str())), src);
+               cmdHandler.reply(dpp::message(questionP(src.issuer.username)), src);
             });
       // TODO: make this work. and look nice.
       cmdHandler.add_command(
