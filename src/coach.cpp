@@ -106,12 +106,12 @@ std::string Coach::bot::flip(){
    return "Oh, you know that it's tough. Enough!";
 }
 
-std::string Coach::bot::question(){
+std::string Coach::bot::question(std::string userId){
 
    int chance{randInt(0, 100)};
    std::vector<std::string> rareAnswers{
-      "You should probably kill yourself.",
-      "You there, placeholder, why aren't you doing your neck calisthenics?",
+      //"You should probably kill yourself.",
+      "You there, @" + userId + " , why aren't you doing your neck calisthenics?",
    };
 
    std::vector<std::string> answers{
@@ -136,12 +136,12 @@ std::string Coach::bot::question(){
       "Who even says nook and cranny anymore? I don't even know what a cranny is.",
       "That's enough to bring a tear to your eye...",
       "You gotta have calves the size of cantalopes... or honeydew...",
-      "You gotta have a chest so big, no on ecan get within 5 feet of ya!",
+      "You gotta have a chest so big, no one can get within 5 feet of ya!",
       "You need to have a personal relationship with Jesus Christ.",
       "You kids sure do know your bible stories.",
       "...Super.",
    };
-   if(chance > 99){
+   if(chance < 99){
       return rareAnswers[randInt(0, rareAnswers.size())];
    }
    return answers[randInt(0, answers.size())];
@@ -252,8 +252,13 @@ void Coach::bot::onReady(){
       // commands go here
       // TODO: Add help command
       simpleReply("guard", "Guard the bank!", guardP);
-      simpleReply("flip", "Is it tough, enough? Or just pitiful? Just ask your ol' coach.", flipP);
-      simpleReply("question", "Got a question for the coach? Go ahead and ask.", questionP);
+      //simpleReply("flip", "Is it tough, enough? Or just pitiful? Just ask your ol' coach.", flipP); simpleReply("question", "Got a question for the coach? Go ahead and ask.", questionP());
+      cmdHandler.add_command(
+            "question",
+            {},
+            [this, event](std::string const& command, dpp::parameter_list_t const& parameters, dpp::command_source src){
+               cmdHandler.reply(dpp::message(questionP(src.issuer.id.str())), src);
+            });
       // TODO: make this work. and look nice.
       cmdHandler.add_command(
          "calisthenics",
