@@ -1,4 +1,4 @@
-#include "coach.hpp"
+#include "include/coach.hpp"
 #include <chrono>
 #include <cstdint>
 #include <ctime>
@@ -8,10 +8,13 @@
 #include <dpp/commandhandler.h>
 #include <dpp/coro/async.h>
 #include <dpp/discordclient.h>
+#include <dpp/discordvoiceclient.h>
 #include <dpp/dispatcher.h>
 #include <dpp/message.h>
 #include <dpp/presence.h>
 #include <dpp/timer.h>
+#include <dpp/wsclient.h>
+#include <future>
 #include <random>
 #include <string>
 #include <thread>
@@ -46,7 +49,7 @@ int Coach::randInt(int min, int max){
    return range(rng);
 }
 
-std::vector<uint8_t> Coach::getSound(std::string file){
+std::vector<uint8_t> Coach::bot::getSound(std::string file){
 	std::vector<uint8_t> pcmdata;
 
 	mpg123_init();
@@ -75,12 +78,24 @@ std::vector<uint8_t> Coach::getSound(std::string file){
 		counter += buffer_size;
 		totalBtyes += done;
 	}
-	delete buffer;
+	delete[] buffer;
 	mpg123_close(mh);
 	mpg123_delete(mh);
 	mpg123_exit();
 	return pcmdata;
 }
+
+void Coach::bot::playSound(dpp::voiceconn* vc, std::string const& file){
+   std::vector<uint8_t> pcmdata{getSound(file)};
+   std::future<void> playFile{std::async([vc, pcmdata](){
+      vc->voiceclient->send_audio_raw((uint16_t*)pcmdata.data(), pcmdata.size());
+      while(vc->voiceclient->is_playing()){
+         std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      }
+   })};
+   playFile.wait();
+}
+
 
 // ---------------- commands / command logic ----------------- //
 
@@ -143,34 +158,7 @@ std::string Coach::bot::question(){
    if(chance > 99){
       return rareAnswers[0]; // there's only one right now
    }
-   return answers[randInt(0, answers.size())];
-}
-
-void Coach::bot::calisthenics(dpp::cluster& coach, dpp::snowflake guildId, std::string(*files)()){
-   // TODO: implement calisthenics command   
-   dpp::voiceconn* v{coach.get_shard(0)->get_voice(guildId)};
-   if(!v || !v->voiceclient || !v->voiceclient->is_ready()){
-      Coach::log("Not connected to voice in server");
-      return;
-   }
-
-   std::ifstream pcmFile(files(), std::ios::binary);
-   if (!pcmFile.is_open()){
-      Coach::log("PCM file failed to open");
-      return;
-   }
-
-   constexpr size_t samples_per_frame = 1920; // stereo 20ms frame
-   constexpr size_t bytes_per_frame = samples_per_frame * sizeof(uint16_t); // 3840
-   
-   std::vector<uint16_t> buffer(samples_per_frame);
-   
-   while (pcmFile.read(reinterpret_cast<char*>(buffer.data()), bytes_per_frame)) {
-       // len here is the number of samples, not bytes
-       v->voiceclient->send_audio_raw(buffer.data(), samples_per_frame);
-   
-       std::this_thread::sleep_for(std::chrono::milliseconds(20));
-   }
+   return answers[randInt(0, answers.size()-1)];
 }
 
 std::string Coach::bot::calmDown(std::string user){
@@ -183,6 +171,7 @@ std::string Coach::bot::calmDown(std::string user){
 
    return reply[randInt(0, 3)];
 }
+
 
 
 // --------- coach helpers ---------- //
@@ -238,12 +227,17 @@ void Coach::bot::onMessageCreate(){
    });
 }
 
-std::string testFiles(){
-   return "../audio/OUTRO/DONTMESSWTC.pcm";
+void Coach::bot::onVoiceReady(){
+   coach.on_voice_ready([this](dpp::voice_ready_t const& event){
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      playSound(voiceClient, "../audio/MP3/INTRO/CALISTHENICS.mp3");
+      
+      coach.get_shard(0)->disconnect_voice(voiceClient->guild_id); 
+   });
 }
 
 void Coach::bot::onReady(){
-   coach.set_presence(dpp::presence(dpp::ps_online, dpp::at_watching, "the big game"));
+   coach.set_presence(dpp::presence(dpp::ps_online, dpp::at_game, "football"));
 
    cmdHandler.add_prefix("coach! ");
    cmdHandler.add_prefix("Coach! ");
@@ -261,26 +255,15 @@ void Coach::bot::onReady(){
          {},
                                                                                                                       
          [this, event](std::string const& command, dpp::parameter_list_t const& parameters, dpp::command_source src){
-            cmdHandler.reply(dpp::message("Don't worry, I'll be home soon to run you chicken-necks through some calisthenics any day now!"), src);
-
-            //dpp::voiceconn* v{event.from()->get_voice(src.guild_id)};
-            /*
-            dpp::voiceconn* v{this->coach.get_shard(0)->get_voice(src.guild_id)};
-            if(v && v->voiceclient && v->voiceclient->is_ready()){
-               cmdHandler.reply(dpp::message("Get ready, 'cuz it ain't gon' be easy!"), src);
+            //cmdHandler.reply(dpp::message("Don't worry, I'll be home soon to run you chicken-necks through some calisthenics any day now!"), src);
+            
+            dpp::guild* g{dpp::find_guild(src.guild_id)};
+            if(!g->connect_member_voice(this->coach, src.issuer.id)){
+               cmdHandler.reply(dpp::message("You ain't in a voice call!"), src);
                return;
             }
 
-            calisthenics(this->coach, src.guild_id, testFiles);
-            
-            dpp::guild* g{dpp::find_guild(src.guild_id)};
-            if(!g->connect_member_voice(src.issuer.id)){
-               cmdHandler.reply(dpp::message("You ain't in a voice call!"), src);
-               return;
-            }           
-
-            Coach::log("Ready for calisthenics!");
-            */
+            voiceClient = (coach.get_shard(0)->get_voice(src.guild_id));
          }
       );
    });
@@ -292,6 +275,7 @@ void Coach::bot::run(){
    coach.on_log(dpp::utility::cout_logger());
 
    onReady();
+   onVoiceReady();
    onMessageCreate();
 
    coach.start(dpp::st_wait);
