@@ -45,7 +45,7 @@ namespace Coach {
          std::string token();
          void log(std::string const& input){std::cout << input << '\n';}
          std::vector<uint8_t> getSound(std::string file);
-         void playSound(dpp::voiceconn* v, std::string const& file);
+         void playSound(std::string const& file);
 
          // commands & command logic
          void simpleReply(std::string const& name, std::string const& description, std::string (*reply)());
@@ -62,4 +62,42 @@ namespace Coach {
          void onVoiceReady();
          void onMessageCreate(); // what?
    };
+}
+
+// hiding these away because it's ugly
+namespace Audio{
+   inline std::vector<std::string> intro {
+      "../audio/MP3/INTRO/CALISTHENICS.mp3",
+      "../audio/MP3/INTRO/FA.mp3",
+      "../audio/MP3/INTRO/LOOKSLIKE.mp3",
+      "../audio/MP3/INTRO/PAN.mp3",
+   };
+
+   inline std::vector<std::string> directions{
+      "../audio/MP3/DIR/RIGHT.mp3",
+      "../audio/MP3/DIR/LEFT.mp3",
+      "../audio/MP3/DIR/UP.mp3",
+   };
+   inline std::vector<std::string> faster{
+      "../audio/MP3/FASTER/RIGHT.mp3",
+      "../audio/MP3/FASTER/LEFT.mp3",
+      "../audio/MP3/FASTER/UP.mp3",
+   };
+
+   inline std::vector<std::string> outro{
+      "../audio/MP3/OUTRO/DOWN.mp3",
+      "../audio/MP3/OUTRO/RELAX.mp3",
+      "../audio/MP3/OUTRO/DAISY.mp3",
+      "../audio/MP3/OUTRO/DONTMESSWTC.mp3",
+      "../audio/MP3/OUTRO/OXBOWSONG.mp3",
+      "../audio/MP3/OUTRO/PITIFUL.mp3",
+      "../audio/MP3/OUTRO/THATSBEAUTY.mp3",
+      "../audio/MP3/OUTRO/SUCCSONG.mp3",
+      "../audio/MP3/OUTRO/THATSMORELIKEIT.mp3",
+      "../audio/MP3/OUTRO/THATSRIGHTBABY.mp3",
+      "../audio/MP3/OUTRO/UNFORGIVEN.mp3",
+   };
+
+   // TODO: Add misc voice lines
+   inline std::vector<std::string> misc {};
 }

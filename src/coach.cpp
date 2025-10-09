@@ -50,47 +50,47 @@ int Coach::randInt(int min, int max){
 }
 
 std::vector<uint8_t> Coach::bot::getSound(std::string file){
-	std::vector<uint8_t> pcmdata;
+	 std::vector<uint8_t> pcmdata;
 
-	mpg123_init();
+	 mpg123_init();
 
-	int err;
-	mpg123_handle *mh = mpg123_new(NULL, &err);
-	unsigned char* buffer;
-	size_t buffer_size;
-	size_t done;
-	int channels, encoding;
-	long rate;
+	 int err;
+	 mpg123_handle *mh = mpg123_new(NULL, &err);
+	 unsigned char* buffer;
+	 size_t buffer_size;
+	 size_t done;
+	 int channels, encoding;
+	 long rate;
 
-	mpg123_param(mh, MPG123_FORCE_RATE, 48000, 48000.0);
+	 mpg123_param(mh, MPG123_FORCE_RATE, 48000, 48000.0);
 
-	buffer_size = mpg123_outblock(mh);
-	buffer = new unsigned char[buffer_size];
+	 buffer_size = mpg123_outblock(mh);
+	 buffer = new unsigned char[buffer_size];
 
-	mpg123_open(mh, file.c_str());
-	mpg123_getformat(mh, &rate, &channels, &encoding);
+	 mpg123_open(mh, file.c_str());
+	 mpg123_getformat(mh, &rate, &channels, &encoding);
 
-	unsigned int counter = 0;
-	for (int totalBtyes = 0; mpg123_read(mh, buffer, buffer_size, &done) == MPG123_OK; ) {
-		for (auto i = 0; i < buffer_size; i++) {
-			pcmdata.push_back(buffer[i]);
-		}
-		counter += buffer_size;
-		totalBtyes += done;
-	}
-	delete[] buffer;
-	mpg123_close(mh);
-	mpg123_delete(mh);
-	mpg123_exit();
-	return pcmdata;
+	 unsigned int counter = 0;
+	 for (int totalBtyes = 0; mpg123_read(mh, buffer, buffer_size, &done) == MPG123_OK; ) {
+	 	for (auto i = 0; i < buffer_size; i++) {
+	 		pcmdata.push_back(buffer[i]);
+	 	}
+	 	counter += buffer_size;
+	 	totalBtyes += done;
+	 }
+	 delete[] buffer;
+	 mpg123_close(mh);
+	 mpg123_delete(mh);
+	 mpg123_exit();
+	 return pcmdata;
 }
 
-void Coach::bot::playSound(dpp::voiceconn* vc, std::string const& file){
+void Coach::bot::playSound(std::string const& file){
    std::vector<uint8_t> pcmdata{getSound(file)};
-   std::future<void> playFile{std::async([vc, pcmdata](){
-      vc->voiceclient->send_audio_raw((uint16_t*)pcmdata.data(), pcmdata.size());
-      while(vc->voiceclient->is_playing()){
-         std::this_thread::sleep_for(std::chrono::milliseconds(20));
+   std::future<void> playFile{std::async([this, pcmdata](){
+      voiceClient->voiceclient->send_audio_raw((uint16_t*)pcmdata.data(), pcmdata.size());
+      while(voiceClient->voiceclient->is_playing()){
+         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
    })};
    playFile.wait();
@@ -230,9 +230,26 @@ void Coach::bot::onMessageCreate(){
 void Coach::bot::onVoiceReady(){
    coach.on_voice_ready([this](dpp::voice_ready_t const& event){
       std::this_thread::sleep_for(std::chrono::seconds(1));
-      playSound(voiceClient, "../audio/MP3/INTRO/CALISTHENICS.mp3");
-      
-      coach.get_shard(0)->disconnect_voice(voiceClient->guild_id); 
+      playSound(Audio::intro[0]); /* Play CALISTHENICS on join*/
+      playSound(Audio::intro[randInt(1, 2)]);
+      playSound(Audio::intro[3]);
+
+      for (std::string file : Audio::directions){
+         playSound(file);
+      }
+
+      int speedUpChance{randInt(0, 10)};
+      if(speedUpChance > 9){
+         for (std::string file : Audio::faster){
+            playSound(file);
+         }
+      }
+
+      playSound(Audio::outro[0]);
+      playSound(Audio::outro[1]); /* down, relax */
+      playSound(Audio::outro[randInt(2, Audio::outro.size() - 1)]);
+
+      coach.get_shard(0)->disconnect_voice(voiceClient->guild_id);
    });
 }
 
